@@ -140,24 +140,24 @@ function getWebviewContent(result: AnalyzeResult): string {
 
   /* ── Tab Content ── */
   .tab-content { flex: 1; overflow: hidden; position: relative; }
-  .tab-page { position: absolute; inset: 0; overflow: auto; display: none; }
-  .tab-page.active { display: block; }
+  .tab-page { position: absolute; inset: 0; overflow: auto; visibility: hidden; z-index: 0; background: var(--bg); }
+  .tab-page.active { visibility: visible; z-index: 1; }
 
   /* ── DAG ── */
-  .dag-page { padding: 0; overflow: auto; }
-  .dag-page svg { display: block; min-width: 100%; }
+  .dag-page { padding: 16px; overflow: auto; display: flex; align-items: flex-start; justify-content: center; }
+  .dag-page svg { display: block; width: 100%; height: auto; max-height: 100%; }
   svg.dag .stage-bg { opacity: 0.04; }
   svg.dag .stage-label { font-size: 11px; font-weight: 700; text-transform: uppercase; fill: var(--accent); }
   svg.dag .node-rect { rx: 6; ry: 6; stroke-width: 1.5; }
   svg.dag .node-rect.normal { fill: var(--input-bg); stroke: var(--border); }
   svg.dag .node-rect.has-warning { fill: var(--input-bg); stroke: var(--warn); stroke-width: 2; }
   svg.dag .node-text { font-size: 11px; fill: var(--fg); text-anchor: middle; dominant-baseline: central; pointer-events: none; }
-  svg.dag .edge { fill: none; stroke: var(--fg-dim); stroke-width: 1.2; opacity: 0.45; }
-  svg.dag .edge-arrow { fill: var(--fg-dim); opacity: 0.45; }
+  svg.dag .edge { fill: none; stroke: var(--fg-dim); stroke-width: 1.5; opacity: 0.4; }
+  svg.dag .edge-arrow { fill: var(--fg-dim); opacity: 0.5; }
 
   /* ── List pages ── */
-  .list-page { padding: 12px 16px; }
-  .card { padding: 10px 12px; margin: 6px 0; border-radius: 6px; font-size: 12px; line-height: 1.6; }
+  .list-page { padding: 16px 20px 40px; }
+  .card { padding: 12px 14px; margin: 8px 0; border-radius: 6px; font-size: 12px; line-height: 1.7; }
   .card.error { background: rgba(231,76,60,0.08); border-left: 3px solid var(--err); }
   .card.warning { background: rgba(245,158,11,0.08); border-left: 3px solid var(--warn); }
   .card.info { background: rgba(87,153,80,0.08); border-left: 3px solid var(--info); }
@@ -231,10 +231,12 @@ function switchTab(name) {
     return;
   }
 
-  const NODE_W = 140, NODE_H = 34, PAD_X = 24, PAD_Y = 18;
-  const STAGE_GAP = 32, STAGE_LABEL_W = 90;
+  const NODE_W = 150, NODE_H = 34, PAD_X = 28, PAD_Y = 20;
+  const STAGE_GAP = 36, STAGE_LABEL_W = 90;
   const LEFT = STAGE_LABEL_W + 16;
+  const MAX_COLS = 5;
 
+  // Group by stage
   const stageOrder = [];
   const stageMap = new Map();
   for (const n of dag) {
@@ -242,36 +244,76 @@ function switchTab(name) {
     stageMap.get(n.stage).push(n);
   }
 
+  // Build intra-stage dependency depth for proper row assignment
+  // Nodes that depend on other nodes in the SAME stage go to a later row
+  const nodeDepth = new Map(); // name -> depth within its stage
+  for (const [stage, nodes] of stageMap) {
+    const stageNames = new Set(nodes.map(n => n.name));
+    const localDeps = new Map(); // name -> [deps within same stage]
+    for (const n of nodes) {
+      localDeps.set(n.name, n.needs.filter(d => stageNames.has(d)));
+    }
+    // Topological depth assignment
+    const depth = new Map();
+    function getDepth(name) {
+      if (depth.has(name)) return depth.get(name);
+      const deps = localDeps.get(name) || [];
+      const d = deps.length === 0 ? 0 : Math.max(...deps.map(dep => getDepth(dep) + 1));
+      depth.set(name, d);
+      return d;
+    }
+    for (const n of nodes) getDepth(n.name);
+    for (const [name, d] of depth) nodeDepth.set(name, d);
+  }
+
+  // Layout: group by stage, then by depth rows within stage
   const positions = new Map();
   let y = PAD_Y + 8;
   const stageYRanges = [];
+  let globalMaxCol = 0;
 
   for (const stage of stageOrder) {
     const nodes = stageMap.get(stage);
     const stageStartY = y;
-    const cols = Math.min(nodes.length, 5);
-    const rows = Math.ceil(nodes.length / cols);
 
-    for (let i = 0; i < nodes.length; i++) {
-      const col = i % cols;
-      const row = Math.floor(i / cols);
-      const nx = LEFT + col * (NODE_W + PAD_X);
-      const ny = y + row * (NODE_H + PAD_Y);
-      positions.set(nodes[i].name, { x: nx, y: ny, cx: nx + NODE_W / 2, cy: ny + NODE_H / 2 });
+    // Group nodes by depth
+    const byDepth = new Map();
+    for (const n of nodes) {
+      const d = nodeDepth.get(n.name) || 0;
+      if (!byDepth.has(d)) byDepth.set(d, []);
+      byDepth.get(d).push(n);
+    }
+    const depths = [...byDepth.keys()].sort((a, b) => a - b);
+
+    for (const d of depths) {
+      const rowNodes = byDepth.get(d);
+      const cols = Math.min(rowNodes.length, MAX_COLS);
+      globalMaxCol = Math.max(globalMaxCol, cols);
+      const subRows = Math.ceil(rowNodes.length / cols);
+
+      for (let i = 0; i < rowNodes.length; i++) {
+        const col = i % cols;
+        const row = Math.floor(i / cols);
+        const nx = LEFT + col * (NODE_W + PAD_X);
+        const ny = y + row * (NODE_H + PAD_Y);
+        positions.set(rowNodes[i].name, { x: nx, y: ny, cx: nx + NODE_W / 2, cy: ny + NODE_H / 2 });
+      }
+      y += subRows * (NODE_H + PAD_Y);
     }
 
-    y += rows * (NODE_H + PAD_Y) + STAGE_GAP;
+    y += STAGE_GAP;
     stageYRanges.push({ stage, startY: stageStartY - 10, endY: y - STAGE_GAP + 6 });
   }
-
-  const maxCols = Math.max(...[...stageMap.values()].map(n => Math.min(n.length, 5)));
-  const svgW = LEFT + maxCols * (NODE_W + PAD_X) + PAD_X;
+  const svgW = LEFT + globalMaxCol * (NODE_W + PAD_X) + PAD_X;
   const svgH = y + PAD_Y;
-  svg.setAttribute('width', svgW);
-  svg.setAttribute('height', svgH);
+  // Let CSS handle sizing; viewBox enables responsive scaling
+  svg.removeAttribute('width');
+  svg.removeAttribute('height');
   svg.setAttribute('viewBox', '0 0 ' + svgW + ' ' + svgH);
+  svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
 
-  let html = '<defs><marker id="ah" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="8" markerHeight="6" orient="auto"><polygon points="0 0, 10 3.5, 0 7" class="edge-arrow"/></marker></defs>';
+  const ARROW_W = 7, ARROW_H = 5;
+  let html = '';
 
   // Stage backgrounds + labels
   for (const { stage, startY, endY } of stageYRanges) {
@@ -279,18 +321,24 @@ function switchTab(name) {
     html += '<text class="stage-label" x="12" y="' + (startY + 18) + '">' + stage.toUpperCase() + '</text>';
   }
 
-  // Edges
+  // Edges — line + manual arrowhead triangle
   for (const n of dag) {
     const to = positions.get(n.name);
     if (!to) continue;
     for (const dep of n.needs) {
       const from = positions.get(dep);
       if (!from) continue;
-      const x1 = from.cx, y1 = from.cy + NODE_H / 2 + 1;
-      const x2 = to.cx, y2 = to.cy - NODE_H / 2 - 1;
+      const x1 = from.cx;
+      const y1 = from.cy + NODE_H / 2;
+      const x2 = to.cx;
+      const y2 = to.cy - NODE_H / 2 - ARROW_H;
       const dy = Math.abs(y2 - y1);
-      const cp = Math.min(dy * 0.45, 60);
-      html += '<path class="edge" d="M' + x1 + ',' + y1 + ' C' + x1 + ',' + (y1 + cp) + ' ' + x2 + ',' + (y2 - cp) + ' ' + x2 + ',' + y2 + '" marker-end="url(#ah)"/>';
+      const cp = Math.max(dy * 0.35, 20);
+      // Bezier curve ending just above the arrowhead
+      html += '<path class="edge" d="M' + x1 + ',' + y1 + ' C' + x1 + ',' + (y1 + cp) + ' ' + x2 + ',' + (y2 - cp) + ' ' + x2 + ',' + y2 + '"/>';
+      // Arrowhead triangle pointing down, tip touching node top
+      const tipY = to.cy - NODE_H / 2;
+      html += '<polygon class="edge-arrow" points="' + (x2 - ARROW_W) + ',' + (tipY - ARROW_H * 2) + ' ' + (x2 + ARROW_W) + ',' + (tipY - ARROW_H * 2) + ' ' + x2 + ',' + tipY + '"/>';
     }
   }
 
