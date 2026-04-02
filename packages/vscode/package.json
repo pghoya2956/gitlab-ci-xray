@@ -1,0 +1,73 @@
+{
+  "name": "gitlab-ci-xray-vscode",
+  "displayName": "GitLab CI X-Ray",
+  "description": "GitLab CI pipeline analyzer — DAG visualization, anti-pattern detection, optimization suggestions",
+  "version": "0.1.0",
+  "publisher": "infograb",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Linters",
+    "Visualization",
+    "Other"
+  ],
+  "keywords": [
+    "gitlab",
+    "ci",
+    "pipeline",
+    "dag",
+    "devops",
+    "yaml"
+  ],
+  "activationEvents": [
+    "onLanguage:yaml",
+    "workspaceContains:**/.gitlab-ci.yml"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "gitlab-ci-xray.openPreview",
+        "title": "GitLab CI X-Ray: Open Preview",
+        "icon": "$(graph)"
+      },
+      {
+        "command": "gitlab-ci-xray.copyForAI",
+        "title": "GitLab CI X-Ray: Copy for AI"
+      },
+      {
+        "command": "gitlab-ci-xray.exportMarkdown",
+        "title": "GitLab CI X-Ray: Export as Markdown"
+      },
+      {
+        "command": "gitlab-ci-xray.exportJSON",
+        "title": "GitLab CI X-Ray: Export as JSON"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "gitlab-ci-xray.openPreview",
+          "when": "resourceFilename =~ /\\.gitlab-ci\\.yml$/ || resourceFilename =~ /.*\\.gitlab-ci\\.yml$/",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "build": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --sourcemap",
+    "watch": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --sourcemap --watch",
+    "package": "vsce package --no-dependencies",
+    "vscode:prepublish": "pnpm build"
+  },
+  "dependencies": {
+    "@aspect/gitlab-ci-xray-core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^3.0.0",
+    "esbuild": "^0.24.0"
+  }
+}
