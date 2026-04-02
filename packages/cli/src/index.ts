@@ -2,10 +2,30 @@
 
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { parse } from '@aspect/gitlab-ci-xray-core';
+import { analyze, formatForAI } from '@aspect/gitlab-ci-xray-core';
 
 const args = process.argv.slice(2);
-const filePath = args[0] ?? '.gitlab-ci.yml';
+
+if (args.includes('--help') || args.includes('-h')) {
+  console.log(`
+  gitlab-ci-xray [file] [options]
+
+  Arguments:
+    file            Path to .gitlab-ci.yml (default: .gitlab-ci.yml)
+
+  Options:
+    --json          Output as JSON
+    --ai            Output in AI-friendly format (for pasting into AI chat)
+    --help, -h      Show this help
+`);
+  process.exit(0);
+}
+
+const flags = args.filter(a => a.startsWith('--'));
+const positional = args.filter(a => !a.startsWith('-'));
+const filePath = positional[0] ?? '.gitlab-ci.yml';
+const outputJson = flags.includes('--json');
+const outputAI = flags.includes('--ai');
 
 const resolved = resolve(filePath);
 
@@ -18,50 +38,81 @@ try {
 }
 
 try {
-  const { config, warnings } = await parse(source, {
+  const result = await analyze(source, {
     file: filePath,
     basePath: resolve(filePath, '..'),
   });
 
-  const jobNames = Object.keys(config.jobs);
-  const visible = jobNames.filter(n => !n.startsWith('.'));
-  const hidden = jobNames.filter(n => n.startsWith('.'));
+  if (outputJson) {
+    console.log(JSON.stringify({
+      dag: result.dag.map(n => ({
+        job: n.jobName,
+        stage: n.stage,
+        needs: n.needs,
+        stageNeeds: n.stageNeeds,
+      })),
+      warnings: result.warnings.map(w => ({
+        ruleId: w.ruleId,
+        severity: w.severity,
+        message: w.message,
+        job: w.location.jobName,
+      })),
+      suggestions: result.suggestions.map(s => ({
+        id: s.id,
+        type: s.type,
+        title: s.title,
+        impact: s.impact,
+        jobs: s.affectedJobs,
+      })),
+      summary: {
+        jobs: result.dag.length,
+        stages: [...new Set(result.dag.map(n => n.stage))],
+        warnings: result.warnings.length,
+        suggestions: result.suggestions.length,
+      },
+    }, null, 2));
+  } else if (outputAI) {
+    console.log(formatForAI(result));
+  } else {
+    // Default: human-readable summary
+    const visible = result.dag;
+    console.log(`\n  GitLab CI X-Ray: ${filePath}\n`);
+    console.log(`  Stages:    ${[...new Set(visible.map(n => n.stage))].join(' → ')}`);
+    console.log(`  Jobs:      ${visible.length}`);
+    console.log(`  Warnings:  ${result.warnings.length} (error ${result.warnings.filter(w => w.severity === 'error').length}, warning ${result.warnings.filter(w => w.severity === 'warning').length}, info ${result.warnings.filter(w => w.severity === 'info').length})`);
+    console.log(`  Suggest:   ${result.suggestions.length}`);
 
-  console.log(`\n  GitLab CI X-Ray: ${filePath}\n`);
-  console.log(`  Stages:    ${config.stages.join(' → ')}`);
-  console.log(`  Jobs:      ${visible.length} visible, ${hidden.length} hidden`);
-  console.log(`  Includes:  ${config.includes.length}`);
-  console.log(`  Variables: ${Object.keys(config.variables).length}`);
-
-  if (config.workflow?.rules) {
-    console.log(`  Workflow:  ${config.workflow.rules.length} rules`);
-  }
-
-  if (visible.length > 0) {
-    console.log(`\n  Jobs:`);
-    const byStage = new Map<string, string[]>();
-    for (const name of visible) {
-      const stage = config.jobs[name].stage;
-      if (!byStage.has(stage)) byStage.set(stage, []);
-      byStage.get(stage)!.push(name);
-    }
-    for (const stage of config.stages) {
-      const jobs = byStage.get(stage);
-      if (jobs && jobs.length > 0) {
-        console.log(`    [${stage}] ${jobs.join(', ')}`);
+    if (visible.length > 0) {
+      console.log(`\n  Pipeline:`);
+      let currentStage = '';
+      for (const node of visible) {
+        if (node.stage !== currentStage) {
+          currentStage = node.stage;
+          console.log(`    [${currentStage}]`);
+        }
+        const deps = node.needs.length > 0
+          ? ` → needs: ${node.needs.join(', ')}`
+          : '';
+        console.log(`      ${node.jobName}${deps}`);
       }
     }
-  }
 
-  if (warnings.length > 0) {
-    console.log(`\n  Warnings:`);
-    for (const w of warnings) {
-      console.log(`    - ${w.message}`);
+    if (result.warnings.length > 0) {
+      console.log(`\n  Top warnings:`);
+      for (const w of result.warnings.slice(0, 10)) {
+        const icon = w.severity === 'error' ? 'E' : w.severity === 'warning' ? 'W' : 'I';
+        console.log(`    [${icon}] ${w.ruleId}: ${w.message}`);
+      }
+      if (result.warnings.length > 10) {
+        console.log(`    ... and ${result.warnings.length - 10} more`);
+      }
     }
+
+    console.log('');
   }
 
-  console.log('');
-  process.exit(warnings.length > 0 ? 1 : 0);
+  const hasErrors = result.warnings.some(w => w.severity === 'error');
+  process.exit(hasErrors ? 1 : 0);
 } catch (err: unknown) {
   console.error(`분석 실패: ${err instanceof Error ? err.message : String(err)}`);
   process.exit(2);

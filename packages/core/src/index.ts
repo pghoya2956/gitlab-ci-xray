@@ -28,6 +28,12 @@ export { interpretSchema, validateStageRefs } from './schema.js';
 export { resolveExtends } from './resolver/extends.js';
 export { resolveReferences, type ResolveReferencesOptions } from './resolver/reference.js';
 export { resolveIncludes, type IncludeResult, type IncludeError } from './resolver/include.js';
+export { buildDAG } from './dag.js';
+export { runRules, allRules, type Rule, type RuleEngineOptions } from './rules/index.js';
+export { generateSuggestions } from './optimizer.js';
+export { applyFix } from './fix.js';
+export { formatForAI } from './format.js';
+export { analyze, type AnalyzeOptions, type AnalyzeResult } from './analyze.js';
 
 // ── Convenience: full parse + resolve pipeline ──
 
