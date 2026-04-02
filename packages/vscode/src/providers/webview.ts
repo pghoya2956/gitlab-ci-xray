@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
-import type { AnalyzeResult } from '@aspect/gitlab-ci-xray-core';
-import { formatForAI } from '@aspect/gitlab-ci-xray-core';
+import type { AnalyzeResult } from 'gitlab-ci-xray-core';
+import { formatForAI } from 'gitlab-ci-xray-core';
 
 export class XRayWebViewPanel {
   private panel: vscode.WebviewPanel | null = null;

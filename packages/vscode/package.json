@@ -3,7 +3,8 @@
   "displayName": "GitLab CI X-Ray",
   "description": "GitLab CI pipeline analyzer — DAG visualization, anti-pattern detection, optimization suggestions",
   "version": "0.1.0",
-  "publisher": "infograb",
+  "publisher": "heeho",
+  "icon": "icon.png",
   "license": "MIT",
   "engines": {
     "vscode": "^1.85.0"
@@ -63,7 +64,7 @@
     "vscode:prepublish": "pnpm build"
   },
   "dependencies": {
-    "@aspect/gitlab-ci-xray-core": "workspace:*"
+    "gitlab-ci-xray-core": "workspace:*"
   },
   "devDependencies": {
     "@types/vscode": "^1.85.0",

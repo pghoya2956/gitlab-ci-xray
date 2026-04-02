@@ -12,7 +12,7 @@
     "dev": "tsx src/index.ts"
   },
   "dependencies": {
-    "@aspect/gitlab-ci-xray-core": "workspace:*"
+    "gitlab-ci-xray-core": "^0.1.0"
   },
   "devDependencies": {
     "tsup": "^8.0.0",

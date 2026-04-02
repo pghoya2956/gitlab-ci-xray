@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
-import type { AnalyzeResult } from '@aspect/gitlab-ci-xray-core';
-import { buildDetailedLineMap } from '@aspect/gitlab-ci-xray-core';
+import type { AnalyzeResult } from 'gitlab-ci-xray-core';
+import { buildDetailedLineMap } from 'gitlab-ci-xray-core';
 
 /**
  * Update diagnostics from analysis result.

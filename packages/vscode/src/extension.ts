@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { formatForAI } from '@aspect/gitlab-ci-xray-core';
+import { formatForAI } from 'gitlab-ci-xray-core';
 import { analyzeDocument, isGitLabCI, getCachedResult, clearCache } from './analyzer.js';
 import { updateDiagnostics } from './providers/diagnostics.js';
 import { XRayCodeActionProvider } from './providers/codeaction.js';

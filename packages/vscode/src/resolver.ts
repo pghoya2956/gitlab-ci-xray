@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import type { FileResolver } from '@aspect/gitlab-ci-xray-core';
+import type { FileResolver } from 'gitlab-ci-xray-core';
 
 /**
  * VS Code workspace.fs-based FileResolver.

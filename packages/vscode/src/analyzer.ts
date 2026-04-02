@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { analyze, type AnalyzeResult } from '@aspect/gitlab-ci-xray-core';
+import { analyze, type AnalyzeResult } from 'gitlab-ci-xray-core';
 import { VSCodeFileResolver, getWorkspaceRoot } from './resolver.js';
 
 const GITLAB_CI_PATTERN = /\.gitlab-ci\.yml$/;

@@ -14,7 +14,7 @@ importers:
 
   packages/cli:
     dependencies:
-      '@aspect/gitlab-ci-xray-core':
+      gitlab-ci-xray-core:
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -43,7 +43,7 @@ importers:
 
   packages/vscode:
     dependencies:
-      '@aspect/gitlab-ci-xray-core':
+      gitlab-ci-xray-core:
         specifier: workspace:*
         version: link:../core
     devDependencies:

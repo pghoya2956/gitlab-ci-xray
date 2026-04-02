@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { applyFix } from '@aspect/gitlab-ci-xray-core';
+import { applyFix } from 'gitlab-ci-xray-core';
 import { getCachedResult } from '../analyzer.js';
 
 export class XRayCodeActionProvider implements vscode.CodeActionProvider {

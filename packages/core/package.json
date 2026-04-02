@@ -1,5 +1,5 @@
 {
-  "name": "@aspect/gitlab-ci-xray-core",
+  "name": "gitlab-ci-xray-core",
   "version": "0.1.0",
   "description": "GitLab CI pipeline analyzer core — parser, DAG, anti-pattern detection, optimization",
   "type": "module",

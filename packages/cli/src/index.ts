@@ -2,7 +2,7 @@
 
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { analyze, formatForAI } from '@aspect/gitlab-ci-xray-core';
+import { analyze, formatForAI } from 'gitlab-ci-xray-core';
 
 const args = process.argv.slice(2);
 

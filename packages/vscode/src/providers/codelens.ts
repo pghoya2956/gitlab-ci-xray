@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { buildDetailedLineMap } from '@aspect/gitlab-ci-xray-core';
+import { buildDetailedLineMap } from 'gitlab-ci-xray-core';
 import { getCachedResult } from '../analyzer.js';
 
 export class XRayCodeLensProvider implements vscode.CodeLensProvider {
