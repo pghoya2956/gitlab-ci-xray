@@ -12,6 +12,7 @@
     }
   },
   "scripts": {
+    "prebuild": "tsx scripts/bundle-templates.ts",
     "build": "tsup src/index.ts --format esm --dts",
     "test": "vitest run",
     "test:watch": "vitest",

@@ -81,7 +81,7 @@ build-job:
     const mainYaml = `
 include:
   - local: /ci/missing.yml
-  - template: Jobs/Build.gitlab-ci.yml
+  - template: NonExistent/Custom.gitlab-ci.yml
 
 build-job:
   script: echo "hi"
@@ -93,6 +93,23 @@ build-job:
     const { unresolvedIncludes } = await resolveIncludes(config, resolver, '/project');
 
     expect(unresolvedIncludes).toHaveLength(2);
+  });
+
+  it('resolves bundled templates', async () => {
+    const mainYaml = `
+include:
+  - template: Jobs/Build.gitlab-ci.yml
+
+build-job:
+  script: echo "hi"
+`;
+    const parsed = parseYaml(mainYaml);
+    const config = interpretSchema(parsed);
+    const resolver = mockResolver({});
+
+    const { unresolvedIncludes } = await resolveIncludes(config, resolver, '/project');
+
+    expect(unresolvedIncludes).toHaveLength(0);
   });
 
   it('handles no includes', async () => {

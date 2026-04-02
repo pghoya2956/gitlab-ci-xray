@@ -2,6 +2,7 @@ import type { FileResolver, GitLabCIConfig, IncludeRef } from '../types.js';
 import { XRayError } from '../types.js';
 import { parseYaml } from '../parser.js';
 import { interpretSchema } from '../schema.js';
+import { lookupTemplate } from '../data/template-resolver.js';
 
 const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 
@@ -97,8 +98,7 @@ async function fetchInclude(
   }
 
   if ('template' in ref) {
-    // TODO: Bundle lookup in Phase 1
-    return null;
+    return lookupTemplate(ref.template);
   }
 
   if ('component' in ref) {
