@@ -144,8 +144,13 @@ function getWebviewContent(result: AnalyzeResult): string {
   .tab-page.active { visibility: visible; z-index: 1; }
 
   /* ── DAG ── */
-  .dag-page { padding: 16px; overflow: auto; display: flex; align-items: flex-start; justify-content: center; }
-  .dag-page svg { display: block; width: 100%; height: auto; max-height: 100%; }
+  .dag-page { padding: 0; }
+  .dag-wrap { padding: 16px; display: inline-block; min-width: 100%; box-sizing: border-box; }
+  .dag-page svg { display: block; width: 100%; height: auto; }
+  .zoom-bar { position: sticky; top: 8px; left: 0; z-index: 10; display: flex; gap: 2px; padding: 0 12px; pointer-events: none; }
+  .zoom-bar button { pointer-events: auto; width: 28px; height: 28px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg); color: var(--fg); font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: 0.8; transition: opacity 0.15s; }
+  .zoom-bar button:hover { opacity: 1; background: var(--input-bg); }
+  .zoom-bar .zoom-level { pointer-events: none; font-size: 11px; color: var(--fg-dim); display: flex; align-items: center; padding: 0 6px; }
   svg.dag .stage-bg { opacity: 0.04; }
   svg.dag .stage-label { font-size: 11px; font-weight: 700; text-transform: uppercase; fill: var(--accent); }
   svg.dag .node-rect { rx: 6; ry: 6; stroke-width: 1.5; }
@@ -204,7 +209,15 @@ function getWebviewContent(result: AnalyzeResult): string {
 
 <div class="tab-content">
   <div class="tab-page dag-page active" id="page-dag">
-    <svg class="dag" id="dagSvg"></svg>
+    <div class="zoom-bar">
+      <button onclick="dagZoom(-1)" title="Zoom out">-</button>
+      <button onclick="dagZoom(1)" title="Zoom in">+</button>
+      <button onclick="dagZoom(0)" title="Reset" class="zoom-reset"><svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 2.5v3.5H7"/><path d="M3.5 6C4.5 3.5 6.5 2 8.5 2A5 5 0 1 1 4 12.5"/></svg></button>
+      <span class="zoom-level" id="zoomLevel">100%</span>
+    </div>
+    <div class="dag-wrap" id="dagWrap">
+      <svg class="dag" id="dagSvg"></svg>
+    </div>
   </div>
   <div class="tab-page list-page" id="page-warnings"></div>
   <div class="tab-page list-page" id="page-suggestions"></div>
@@ -231,8 +244,8 @@ function switchTab(name) {
     return;
   }
 
-  const NODE_W = 150, NODE_H = 34, PAD_X = 28, PAD_Y = 20;
-  const STAGE_GAP = 36, STAGE_LABEL_W = 90;
+  const NODE_W = 150, NODE_H = 34, PAD_X = 28, PAD_Y = 48;
+  const STAGE_GAP = 40, STAGE_LABEL_W = 90;
   const LEFT = STAGE_LABEL_W + 16;
   const MAX_COLS = 5;
 
@@ -306,9 +319,6 @@ function switchTab(name) {
   }
   const svgW = LEFT + globalMaxCol * (NODE_W + PAD_X) + PAD_X;
   const svgH = y + PAD_Y;
-  // Let CSS handle sizing; viewBox enables responsive scaling
-  svg.removeAttribute('width');
-  svg.removeAttribute('height');
   svg.setAttribute('viewBox', '0 0 ' + svgW + ' ' + svgH);
   svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
 
@@ -384,6 +394,39 @@ function switchTab(name) {
   }
   el.innerHTML = html;
 })();
+
+// ── Zoom ──
+let zoomScale = 1;
+const ZOOM_STEP = 0.15;
+const ZOOM_MIN = 0.3;
+const ZOOM_MAX = 3;
+
+function dagZoom(dir) {
+  if (dir === 0) { zoomScale = 1; }
+  else { zoomScale = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, zoomScale + dir * ZOOM_STEP)); }
+  applyZoom();
+}
+
+function applyZoom() {
+  const wrap = document.getElementById('dagWrap');
+  const label = document.getElementById('zoomLevel');
+  if (wrap) {
+    const pct = zoomScale * 100;
+    wrap.style.width = pct + '%';
+    wrap.style.minWidth = pct < 100 ? '0' : '100%';
+  }
+  if (label) label.textContent = Math.round(zoomScale * 100) + '%';
+}
+
+// Ctrl+wheel zoom on DAG page
+document.getElementById('page-dag').addEventListener('wheel', function(e) {
+  if (e.ctrlKey || e.metaKey) {
+    e.preventDefault();
+    const dir = e.deltaY < 0 ? 1 : -1;
+    zoomScale = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, zoomScale + dir * ZOOM_STEP));
+    applyZoom();
+  }
+}, { passive: false });
 
 function copyForAI() {
   vscode.postMessage({ type: 'copyForAI' });
