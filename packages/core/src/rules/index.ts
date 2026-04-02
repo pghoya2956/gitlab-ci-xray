@@ -14,6 +14,8 @@ import { ap012 } from './ap-012-empty-rules.js';
 import { ap013 } from './ap-013-missing-image.js';
 import { ap014 } from './ap-014-undefined-stage.js';
 import { ap015 } from './ap-015-allow-failure-rules.js';
+import { ap016 } from './ap-016-unsafe-variable-command.js';
+import { ap017 } from './ap-017-duplicate-rules-block.js';
 
 export { runRules, type Rule, type RuleEngineOptions } from './engine.js';
 
@@ -22,4 +24,5 @@ export const allRules: Rule[] = [
   ap001, ap002, ap003, ap004, ap005,
   ap006, ap007, ap008, ap009, ap010,
   ap011, ap012, ap013, ap014, ap015,
+  ap016, ap017,
 ];

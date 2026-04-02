@@ -19,6 +19,8 @@ GitLab CI X-Ray가 탐지하는 안티패턴 규칙입니다. 각 규칙은 GitL
 | [AP-013](ap-013.md) | warning | image 미설정 | 재현 가능한 빌드 |
 | [AP-014](ap-014.md) | error | 정의되지 않은 stage | GitLab CI 엔진 에러 |
 | [AP-015](ap-015.md) | info | allow_failure + rules 혼용 | 동작 혼란 방지 |
+| [AP-016](ap-016.md) | warning | 파괴적 명령 + 미검증 변수 | 실제 사고 패턴 |
+| [AP-017](ap-017.md) | info | rules 블록 반복 | DRY 원칙 |
 
 ## 규칙 추가 가이드
 

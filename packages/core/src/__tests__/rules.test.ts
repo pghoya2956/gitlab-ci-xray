@@ -288,6 +288,66 @@ describe('Anti-pattern rules', () => {
     });
   });
 
+  describe('AP-016: unsafe variable in destructive command', () => {
+    it('warns on rm -rf with unchecked variable', () => {
+      const config = makeConfig({
+        clean: { script: ['rm -rf ${DEPLOY_DIR}/*'] },
+      });
+      expect(findRule('AP-016').check(config)).toHaveLength(1);
+    });
+
+    it('no warning with safe guard', () => {
+      const config = makeConfig({
+        clean: { script: ['${DEPLOY_DIR:?must be set}', 'rm -rf ${DEPLOY_DIR}/*'] },
+      });
+      expect(findRule('AP-016').check(config)).toHaveLength(0);
+    });
+
+    it('no warning without destructive command', () => {
+      const config = makeConfig({
+        build: { script: ['echo $HOME'] },
+      });
+      expect(findRule('AP-016').check(config)).toHaveLength(0);
+    });
+
+    it('warns on rsync --delete with variable', () => {
+      const config = makeConfig({
+        deploy: { script: ['rsync -avz --delete ./dist/ ${REMOTE_PATH}'] },
+      });
+      expect(findRule('AP-016').check(config)).toHaveLength(1);
+    });
+  });
+
+  describe('AP-017: duplicate rules block', () => {
+    it('warns when 3+ jobs have identical rules', () => {
+      const sharedRules = [{ if: '$CI_COMMIT_BRANCH == "main"' }, { if: '$CI_PIPELINE_SOURCE == "merge_request_event"' }];
+      const config = makeConfig({
+        a: { rules: sharedRules },
+        b: { rules: sharedRules },
+        c: { rules: sharedRules },
+      });
+      expect(findRule('AP-017').check(config)).toHaveLength(1);
+    });
+
+    it('no warning with fewer than 3 duplicates', () => {
+      const sharedRules = [{ if: '$CI_COMMIT_BRANCH == "main"' }];
+      const config = makeConfig({
+        a: { rules: sharedRules },
+        b: { rules: sharedRules },
+      });
+      expect(findRule('AP-017').check(config)).toHaveLength(0);
+    });
+
+    it('no warning when rules differ', () => {
+      const config = makeConfig({
+        a: { rules: [{ if: '$CI_COMMIT_BRANCH == "main"' }] },
+        b: { rules: [{ if: '$CI_COMMIT_BRANCH == "develop"' }] },
+        c: { rules: [{ if: '$CI_COMMIT_TAG' }] },
+      });
+      expect(findRule('AP-017').check(config)).toHaveLength(0);
+    });
+  });
+
   describe('AP-014: undefined stage', () => {
     it('errors on undefined stage', () => {
       const config = makeConfig(
