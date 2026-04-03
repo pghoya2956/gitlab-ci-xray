@@ -3,7 +3,7 @@ import { XRayError } from './types.js';
 import type { ParseResult } from './parser.js';
 
 /** Global keywords that are NOT job definitions */
-const GLOBAL_KEYWORDS = new Set([
+export const GLOBAL_KEYWORDS = new Set([
   'stages',
   'variables',
   'default',

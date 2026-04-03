@@ -13,6 +13,7 @@ import { resolveIncludes, type IncludeError } from './resolver/include.js';
 import { buildDAG } from './dag.js';
 import { allRules, runRules } from './rules/index.js';
 import { generateSuggestions } from './optimizer.js';
+import { validateSchema } from './schema/validator.js';
 
 export interface AnalyzeOptions {
   file?: string;
@@ -35,8 +36,11 @@ export async function analyze(
 ): Promise<AnalyzeResult> {
   const { file = '.gitlab-ci.yml', resolver, basePath = '', analysis = {} } = options;
 
-  // Parse + resolve
+  // Parse + schema validation (before resolver)
   const parsed = parseYaml(source, file);
+  const schemaWarnings = validateSchema(parsed.data, {
+    hasIncludes: parsed.data.include != null,
+  });
   let config = interpretSchema(parsed, file);
 
   let unresolvedIncludes: IncludeRef[] = [];
@@ -51,16 +55,23 @@ export async function analyze(
   config = resolveExtends(config, file);
   config = resolveReferences(config, file, { lenient: config.includes.length > 0 });
 
-  // Build DAG
-  const dag = buildDAG(config, file);
+  // Build DAG + rules + suggestions (may fail if config has schema-level errors)
+  let dag: import('./types.js').DAGNode[] = [];
+  let ruleWarnings: import('./types.js').AntiPatternWarning[] = [];
+  let suggestions: import('./types.js').OptimizationSuggestion[] = [];
 
-  // Run anti-pattern rules
-  const warnings = runRules(allRules, config, {
-    minSeverity: analysis.severity,
-  });
+  try {
+    dag = buildDAG(config, file);
+    ruleWarnings = runRules(allRules, config, {
+      minSeverity: analysis.severity,
+    });
+    suggestions = generateSuggestions(config, dag);
+  } catch {
+    // Schema-level errors (e.g., wrong types) may crash downstream.
+    // Return schema warnings + whatever we collected so far.
+  }
 
-  // Generate optimization suggestions
-  const suggestions = generateSuggestions(config, dag);
+  const warnings = [...schemaWarnings, ...ruleWarnings];
 
   return {
     config,

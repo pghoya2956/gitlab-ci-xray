@@ -35,6 +35,7 @@ export { applyFix } from './fix.js';
 export { formatForAI } from './format.js';
 export { analyze, type AnalyzeOptions, type AnalyzeResult } from './analyze.js';
 export { lookupTemplate, listTemplates } from './data/template-resolver.js';
+export { validateSchema, type ValidateSchemaOptions } from './schema/validator.js';
 
 // ── Convenience: full parse + resolve pipeline ──
 

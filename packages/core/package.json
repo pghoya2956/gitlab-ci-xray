@@ -12,7 +12,7 @@
     }
   },
   "scripts": {
-    "prebuild": "tsx scripts/bundle-templates.ts",
+    "prebuild": "tsx scripts/bundle-templates.ts && tsx scripts/bundle-schema.ts",
     "build": "tsup src/index.ts --format esm --dts",
     "test": "vitest run",
     "test:watch": "vitest",
