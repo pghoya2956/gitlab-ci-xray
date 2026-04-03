@@ -45,6 +45,7 @@ try {
 
   if (outputJson) {
     console.log(JSON.stringify({
+      version: 1,
       dag: result.dag.map(n => ({
         job: n.jobName,
         stage: n.stage,
@@ -55,14 +56,27 @@ try {
         ruleId: w.ruleId,
         severity: w.severity,
         message: w.message,
+        description: w.description,
         job: w.location.jobName,
+        key: w.location.key,
+        line: w.location.line ?? null,
+        docUrl: w.docUrl ?? null,
+        fix: w.fix ? {
+          id: w.fix.id,
+          title: w.fix.title,
+          before: w.fix.before,
+          after: w.fix.after,
+        } : null,
       })),
       suggestions: result.suggestions.map(s => ({
         id: s.id,
         type: s.type,
         title: s.title,
+        description: s.description,
         impact: s.impact,
         jobs: s.affectedJobs,
+        before: s.before,
+        after: s.after,
       })),
       summary: {
         jobs: result.dag.length,

@@ -1,6 +1,6 @@
 {
   "name": "gitlab-ci-xray",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "GitLab CI pipeline analyzer — DAG visualization, anti-pattern detection, optimization suggestions",
   "type": "module",
   "bin": {
@@ -12,7 +12,7 @@
     "dev": "tsx src/index.ts"
   },
   "dependencies": {
-    "gitlab-ci-xray-core": "^0.2.0"
+    "gitlab-ci-xray-core": "^0.3.0"
   },
   "devDependencies": {
     "tsup": "^8.0.0",
