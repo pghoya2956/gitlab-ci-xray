@@ -2,7 +2,7 @@
   "name": "gitlab-ci-xray-vscode",
   "displayName": "GitLab CI X-Ray",
   "description": "GitLab CI pipeline analyzer — DAG visualization, anti-pattern detection, optimization suggestions",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "heeho",
   "icon": "icon.png",
   "license": "MIT",
